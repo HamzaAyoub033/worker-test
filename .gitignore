@@ -1,0 +1,8 @@
+/bin/
+/node_modules/
+.env
+
+pulumiProgram.js
+worker.js
+aws-faizank-kp.pem
+aws-faizank-kp.pub

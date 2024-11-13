@@ -1,0 +1,16 @@
+[Unit]
+Description=Streamlit Application Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory={{ base_dir }}/{{ app_directory }}
+EnvironmentFile=/etc/default/streamlit
+ExecStart={{ base_dir }}/{{ venv_path }}/bin/streamlit run {{ base_dir }}/{{ app_directory }}/app.py
+Restart=always
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

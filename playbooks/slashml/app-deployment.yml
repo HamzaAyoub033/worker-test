@@ -1,0 +1,213 @@
+- hosts: all
+  become: yes
+  vars:
+    # Default variables that can be overridden
+    ansible_ssh_common_args: "-o ConnectTimeout=60"
+    ansible_ssh_retries: 3
+    base_dir: "/home/ubuntu"
+    repo_url: "{{ github_repo }}"
+    env_vars: "{{ environmentVariables }}"
+    repo_branch: "main"
+    app_directory: "streamlit_app"
+    venv_path: "streamlit_venv"
+    domain_name: "hungy-einstein.slashml.com"
+    system_packages:
+      - python3
+      - python3-pip
+      - python3-venv
+      - git
+      - nginx
+  tasks:
+    # - name: Update package cache
+    #   apt:
+    #     update_cache: yes
+    #   when: ansible_os_family == "Debian"
+
+    # - name: Install required system packages
+    #   package:
+    #     name: "{{ system_packages }}"
+    #     state: present
+
+    - name: Create application directory
+      file:
+        path: "{{ app_directory }}"
+        state: directory
+        mode: "0755"
+
+    - name: Clone/Update repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_directory }}"
+        version: "{{ repo_branch }}"
+        force: yes
+
+    - name: Create Python virtual environment
+      command:
+        cmd: "python3 -m venv {{ venv_path }}"
+        creates: "{{ venv_path }}"
+
+    - name: Deploy application
+      hosts: all
+      become: yes
+      vars:
+        github_repo: "{{ github_repo }}"
+        db_host: "{{ DB_HOST }}"
+        db_port: "{{ DB_PORT }}"
+        api_key: "{{ API_KEY }}"
+
+    - name: Create environment file
+      template:
+        dest: "/app/.env"
+        content: |
+          DB_HOST={{ db_host }}
+          DB_PORT={{ db_port }}
+          API_KEY={{ api_key }}
+        mode: "0600"
+
+    # - name: Debug environment file creation
+    #   debug:
+    #     var: env_file_result
+
+    # - name: Display environment file contents
+    #   command: cat /etc/default/streamlit
+    #   register: env_file_contents
+    #   changed_when: false
+
+    # - name: Debug environment file contents
+    #   debug:
+    #     var: env_file_contents.stdout_lines
+
+    - name: Ensure environment file permissions
+      file:
+        path: /etc/default/streamlit
+        mode: "0644"
+        owner: root
+        group: root
+
+    - name: Source environment file in profile
+      lineinfile:
+        path: /etc/profile.d/streamlit_env.sh
+        create: yes
+        line: "source /etc/default/streamlit"
+        mode: "0644"
+
+    - name: Source environment file in systemd service
+      template:
+        src: streamlit.service.j2
+        dest: /etc/systemd/system/streamlit.service
+        mode: "0644"
+      notify: restart streamlit
+
+    # - name: Ensure www-data has access to application directory
+    #   file:
+    #     path: "{{ app_directory }}"
+    #     owner: www-data
+    #     group: www-data
+    #     recurse: yes
+    #     state: directory
+
+    # - name: Ensure www-data has access to virtual environment
+    #   file:
+    #     path: "{{ venv_path }}"
+    #     owner: www-data
+    #     group: www-data
+    #     recurse: yes
+    #     state: directory
+
+    # - name: Debug - List virtual environment contents
+    #   command:
+    #     cmd: "ls -la {{ venv_path }}/bin"
+    #   register: venv_contents
+
+    # - name: Debug - Show virtual environment contents
+    #   debug:
+    #     var: venv_contents.stdout_lines
+
+    # - name: Debug - Show HOME directory
+    #   debug:
+    #     var: ansible_env.HOME
+    # - name: Upgrade pip
+    #   pip:
+    #     name: pip
+    #     state: latest
+    #     virtualenv: "{{ venv_path }}"
+
+    # - name: Install Python dependencies
+    #   pip:
+    #     requirements: "{{ app_directory }}/requirements.txt"
+    #     virtualenv: "{{ venv_path }}"
+    #     state: present
+
+    # - name: Install Python dependencies
+    #   pip:
+    #     requirements: "{{ app_directory }}/requirements.txt"
+    #     virtualenv: "{{ venv_path }}"
+    #     virtualenv_python: python3
+    #     state: present
+    #   environment:
+    #     PATH: "{{ venv_path }}/bin:{{ ansible_env.PATH }}"
+
+    - name: Install requirements using direct pip command
+      command:
+        cmd: "{{ venv_path }}/bin/pip install -r {{ app_directory }}/requirements.txt"
+      register: pip_result
+      changed_when: "'Successfully installed' in pip_result.stdout"
+
+    # - name: Debug - Show environment file result
+    #   debug:
+    #     var: env_file_result
+
+    - name: Create systemd service file
+      become: yes
+      template:
+        src: streamlit.service.j2
+        dest: /etc/systemd/system/streamlit.service
+        mode: "0644"
+      notify: restart streamlit
+
+    - name: Ensure proper permissions on app directory
+      become: yes
+      file:
+        path: "{{ base_dir }}/{{ app_directory }}"
+        owner: ubuntu
+        group: ubuntu
+        recurse: yes
+        state: directory
+
+    - name: Force systemd to reload configurations
+      systemd:
+        daemon_reload: yes
+
+    # - name: Create Nginx configuration
+    #   template:
+    #     src: nginx.conf.j2
+    #     dest: /etc/nginx/sites-available/{{ domain_name }}
+    #     mode: '0644'
+    #   notify: restart nginx
+
+    # - name: Enable Nginx site
+    #   file:
+    #     src: /etc/nginx/sites-available/{{ domain_name }}
+    #     dest: /etc/nginx/sites-enabled/{{ domain_name }}
+    #     state: link
+    #   notify: restart nginx
+
+    - name: Ensure Streamlit service is running
+      systemd:
+        name: streamlit
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Ensure Nginx is running
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: restart streamlit
+      systemd:
+        name: streamlit
+        state: restarted
+        daemon_reload: yes

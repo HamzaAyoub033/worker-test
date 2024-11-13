@@ -1,0 +1,60 @@
+---
+- hosts: all
+  vars:
+    ansible_ssh_common_args: '-o ConnectTimeout=60'
+    ansible_ssh_retries: 3
+  tasks:
+    - name: Install VLLM
+      pip:
+        name: vllm
+
+    - name: install or upgrade jsonschema
+      pip:
+        name: jsonschema
+        state: latest
+
+    - name: Start VLLM API server in tmux session
+      shell: |
+        tmux new-session -d -s vllm_session 'HF_TOKEN="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" python3 -m vllm.entrypoints.openai.api_server --model meta-llama/Meta-Llama-3-8B-Instruct'
+      # shell: |
+      #   tmux new-session -d -s vllm_session 'HF_TOKEN="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" python3 -m http.server'
+      args:
+        executable: /bin/bash
+
+    # - name: Run VLLM API server
+    #   # command: python3 -m vllm.entrypoints.openai.api_server --model meta-llama/Meta-Llama-3-8B-Instruct >> vllm_server.log 2>&1
+    #   shell: nohup python3 -m vllm.entrypoints.openai.api_server --model facebook/opt-125m &
+    #   # command: vllm serve facebook/opt-125m >> vllm_server.log 2>&1
+    #   environment:
+    #     HF_TOKEN: "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"
+    #   async: 3
+    #   poll: 0
+    #   # register: vllm_server
+
+    - name: Wait for VLLM API server to be up
+      wait_for:
+        host: localhost
+        port: 8000
+        delay: 5
+        timeout: 800
+
+    # - name: Perform health check on VLLM API server
+    #   uri:
+    #     url: http://localhost:8000/v1/models
+    #     method: GET
+    #   register: health_check
+    #   retries: 10
+    #   delay: 30
+    #   until: health_check.status == 200
+
+    # - name: Print the output
+    #   debug:
+    #     var: vllm_server.stdout_lines
+
+
+    # - name: Wait for server to be up
+    #   wait_for:
+    #     host: localhost
+    #     port: 8000
+    #     delay: 10
+    #     timeout: 300

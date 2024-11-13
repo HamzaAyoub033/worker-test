@@ -1,0 +1,9 @@
+name: test_pulumi
+runtime: nodejs
+description: A minimal TypeScript Pulumi program
+config:
+  # pulumi:config:
+    # aws:profile: faizank-1-ec2
+  pulumi:tags:
+    value:
+      pulumi:template: typescript
