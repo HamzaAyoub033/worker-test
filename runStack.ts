@@ -48,7 +48,7 @@ const startInstance = async (data: JobData) => {
   try {
     await client.send(startCommand);
     console.log(`Start command sent for instance ${instanceId}`);
-    saveLog(`Start command sent for instance ${instanceId}`, data.id);
+    // saveLog(`Start command sent for instance ${instanceId}`, data.id);
 
     // Wait for the instance to start and get the public IP
     while (true) {
@@ -62,27 +62,27 @@ const startInstance = async (data: JobData) => {
 
       if (state === InstanceStateName.running && publicIp) {
         console.log(`Instance ${instanceId} is running with IP ${publicIp}`);
-        saveLog(
-          `Instance ${instanceId} is running with IP ${publicIp}`,
-          data.id
-        );
+        // saveLog(
+        //   `Instance ${instanceId} is running with IP ${publicIp}`,
+        //   data.id
+        // );
         break;
       } else if (state === InstanceStateName.pending) {
         console.log(`Instance ${instanceId} is still starting...`);
-        saveLog(`Instance ${instanceId} is still starting...`, data.id);
+        // saveLog(`Instance ${instanceId} is still starting...`, data.id);
         await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds before checking again
       } else if (state === InstanceStateName.stopped) {
         console.log(`Instance ${instanceId} is paused`);
-        saveLog(`Instance ${instanceId} is paused`, data.id);
+        // saveLog(`Instance ${instanceId} is paused`, data.id);
         await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 5 seconds before checking again
       } else {
-        saveLog(`Can't start an instance from ${state} state`, data.id);
+        // saveLog(`Can't start an instance from ${state} state`, data.id);
         throw new Error(`Can't start an instance from ${state} state`);
       }
     }
   } catch (error) {
     console.error(`Error starting instance ${instanceId}:`, error);
-    saveLog(`Error starting instance ${instanceId}: ${error}`, data.id);
+    // saveLog(`Error starting instance ${instanceId}: ${error}`, data.id);
     throw error;
   }
 
@@ -92,7 +92,7 @@ const startInstance = async (data: JobData) => {
     program: async () => await pulumiProgram(data),
   };
 
-  await saveLog(`Creating or selecting stack: ${args.stackName}`, data.id);
+  // await saveLog(`Creating or selecting stack: ${args.stackName}`, data.id);
   const stack = await LocalWorkspace.selectStack(args);
 
   console.info("refreshing stack...");
@@ -143,7 +143,7 @@ const stopInstance = async (data: JobData) => {
   try {
     await client.send(stopCommand);
     console.log(`Stop command sent for instance ${instanceId}`);
-    saveLog(`Stop command sent for instance ${instanceId}`, data.id);
+    // saveLog(`Stop command sent for instance ${instanceId}`, data.id);
 
     // Wait for the instance to stop
     while (true) {
@@ -157,18 +157,18 @@ const stopInstance = async (data: JobData) => {
 
       if (state === InstanceStateName.stopped) {
         console.log(`Instance ${instanceId} has stopped`);
-        saveLog(`Instance ${instanceId} has stopped`, data.id);
+        // saveLog(`Instance ${instanceId} has stopped`, data.id);
         break;
       } else if (state === InstanceStateName.stopping) {
         console.log(`Instance ${instanceId} is still stopping...`);
-        saveLog(`Instance ${instanceId} is still stopping...`, data.id);
+        // saveLog(`Instance ${instanceId} is still stopping...`, data.id);
         await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds before checking again
       } else if (state === InstanceStateName.running) {
         console.log(`Instance ${instanceId} is running`);
-        saveLog(`Instance ${instanceId} is running`, data.id);
+        // saveLog(`Instance ${instanceId} is running`, data.id);
         await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 5 seconds before checking again
       } else {
-        saveLog(`Can't stop an instance form ${state} state`, data.id);
+        // saveLog(`Can't stop an instance form ${state} state`, data.id);
         throw new Error(`Can't stop an instance form ${state} state`);
       }
     }
@@ -191,10 +191,10 @@ const restartInstance = async (data: JobData) => {
 
   // Log environment variables at the start
   console.log("Environment variables for restart:", data.environmentVariables);
-  saveLog(
-    `Restarting with env vars: ${JSON.stringify(data.environmentVariables)}`,
-    data.id
-  );
+  // saveLog(
+  //   `Restarting with env vars: ${JSON.stringify(data.environmentVariables)}`,
+  //   data.id
+  // );
 
   const client = createEC2Client(data.region, data.accessKey, data.secretKey);
   const sessionToken = data.sessionToken;
@@ -222,14 +222,14 @@ const restartInstance = async (data: JobData) => {
           );
         });
         console.log("SSH is available");
-        saveLog("SSH connection established", data.id);
+        // saveLog("SSH connection established", data.id);
         return;
       } catch (error) {
         attempts++;
         console.log(
           `Waiting for SSH to become available... Attempt ${attempts}/${maxAttempts}`
         );
-        saveLog(`SSH connection attempt ${attempts}/${maxAttempts}`, data.id);
+        // saveLog(`SSH connection attempt ${attempts}/${maxAttempts}`, data.id);
         await new Promise((resolve) => setTimeout(resolve, 10000));
       }
     }
@@ -240,7 +240,7 @@ const restartInstance = async (data: JobData) => {
     // Stop the instance
     const stopCommand = new StopInstancesCommand({ InstanceIds: [instanceId] });
     await client.send(stopCommand);
-    saveLog(`Stop command sent for instance restart ${instanceId}`, data.id);
+    // saveLog(`Stop command sent for instance restart ${instanceId}`, data.id);
 
     // Wait for instance to stop
     while (true) {
@@ -252,14 +252,14 @@ const restartInstance = async (data: JobData) => {
 
       if (state === InstanceStateName.stopped) {
         console.log(`Instance ${instanceId} has stopped for restart`);
-        saveLog(`Instance ${instanceId} has stopped for restart`, data.id);
+        // saveLog(`Instance ${instanceId} has stopped for restart`, data.id);
         break;
       } else if (state === InstanceStateName.stopping) {
         console.log(`Instance ${instanceId} is still stopping for restart...`);
-        saveLog(
-          `Instance ${instanceId} is still stopping for restart...`,
-          data.id
-        );
+        // saveLog(
+        //   `Instance ${instanceId} is still stopping for restart...`,
+        //   data.id
+        // );
         await new Promise((resolve) => setTimeout(resolve, 5000));
       } else {
         console.log(`Waiting for instance to stop... Current state: ${state}`);
@@ -275,7 +275,7 @@ const restartInstance = async (data: JobData) => {
       InstanceIds: [instanceId],
     });
     await client.send(startCommand);
-    saveLog(`Start command sent for instance restart ${instanceId}`, data.id);
+    // saveLog(`Start command sent for instance restart ${instanceId}`, data.id);
 
     let publicIp: string | undefined;
     let state: string | undefined;
@@ -292,19 +292,19 @@ const restartInstance = async (data: JobData) => {
 
       if (state === InstanceStateName.running && publicIp) {
         console.log(`Instance ${instanceId} is running with IP ${publicIp}`);
-        saveLog(
-          `Instance ${instanceId} is running with IP ${publicIp}`,
-          data.id
-        );
+        // saveLog(
+        //   `Instance ${instanceId} is running with IP ${publicIp}`,
+        //   data.id
+        // );
         break;
       } else if (state === InstanceStateName.pending) {
         console.log(
           `Instance ${instanceId} is still starting after restart...`
         );
-        saveLog(
-          `Instance ${instanceId} is still starting after restart...`,
-          data.id
-        );
+        // saveLog(
+        //   `Instance ${instanceId} is still starting after restart...`,
+        //   data.id
+        // );
         await new Promise((resolve) => setTimeout(resolve, 5000));
       } else {
         console.log(`Waiting for instance to start... Current state: ${state}`);
@@ -315,7 +315,7 @@ const restartInstance = async (data: JobData) => {
     // Wait for SSH to become available
     if (publicIp) {
       console.log("Waiting for SSH to become available...");
-      saveLog("Waiting for SSH to become available...", data.id);
+      // saveLog("Waiting for SSH to become available...", data.id);
       await waitForSSH(publicIp);
     }
 
@@ -364,13 +364,13 @@ const restartInstance = async (data: JobData) => {
             (error: any, stdout: string, stderr: string) => {
               if (error) {
                 console.error("Error verifying environment variables:", error);
-                saveLog(
-                  `Error verifying environment variables: ${error}`,
-                  data.id
-                );
+                // saveLog(
+                //   `Error verifying environment variables: ${error}`,
+                //   data.id
+                // );
               } else {
                 console.log("Current environment variables:", stdout);
-                saveLog(`Current environment variables: ${stdout}`, data.id);
+                // saveLog(`Current environment variables: ${stdout}`, data.id);
               }
               resolve(stdout);
             }
@@ -378,7 +378,7 @@ const restartInstance = async (data: JobData) => {
         });
       } catch (error) {
         console.error("Failed to verify environment variables:", error);
-        saveLog(`Failed to verify environment variables: ${error}`, data.id);
+        // saveLog(`Failed to verify environment variables: ${error}`, data.id);
       }
     }
 
@@ -398,23 +398,23 @@ const restartInstance = async (data: JobData) => {
     };
   } catch (error) {
     console.error(`Error restarting instance ${instanceId}:`, error);
-    saveLog(`Error restarting instance ${instanceId}: ${error}`, data.id);
+    // saveLog(`Error restarting instance ${instanceId}: ${error}`, data.id);
     throw error;
   }
 };
 
 const runStack = async (data: JobData) => {
   if (data.action === "start") {
-    await saveLog(`Starting instance: ${data.instance_id}`, data.id);
+    // await saveLog(`Starting instance: ${data.instance_id}`, data.id);
     return await startInstance(data);
   } else if (data.action === "stop") {
-    await saveLog(`Stopping instance: ${data.instance_id}`, data.id);
+    // await saveLog(`Stopping instance: ${data.instance_id}`, data.id);
     return await stopInstance(data);
   } else if (data.action === "restart") {
-    await saveLog(
-      `Restarting instance with new environment variables: ${data.instance_id}`,
-      data.id
-    );
+    // await saveLog(
+    //   `Restarting instance with new environment variables: ${data.instance_id}`,
+    //   data.id
+    // );
     return await restartInstance(data);
   } else {
     const logs = [];
@@ -423,7 +423,7 @@ const runStack = async (data: JobData) => {
       projectName: "inlineNode",
       program: async () => await pulumiProgram(data),
     };
-    await saveLog(`Creating or selecting stack: ${args.stackName}`, data.id);
+    // await saveLog(`Creating or selecting stack: ${args.stackName}`, data.id);
     const stack = await LocalWorkspace.createOrSelectStack(args);
     // const logs = await pulumiProgram(data);
     // for (const log of logs) {

@@ -26,12 +26,12 @@ export const pulumiProgram = async (data: JobData) => {
   saveLog(`Pulumi program data: ${JSON.stringify(cleanData)}`, data.id);
   if (data.environmentVariables) {
     console.log("Processing environment variables:", data.environmentVariables);
-    saveLog(
-      `Processing environment variables: ${JSON.stringify(
-        data.environmentVariables
-      )}`,
-      data.id
-    );
+    // saveLog(
+    //   `Processing environment variables: ${JSON.stringify(
+    //     data.environmentVariables
+    //   )}`,
+    //   data.id
+    // );
   }
 
   const instanceType = data.instance_name;
@@ -68,14 +68,14 @@ export const pulumiProgram = async (data: JobData) => {
         saveLog(`Existing key pair found: ${result.keyName}`, data.id);
       } else {
         console.log("keypiar not found created a new one");
-        saveLog("keypiar not found created a new one", data.id);
+        // saveLog("keypiar not found created a new one", data.id);
         throw new Error("Key pair not found");
       }
     })
     .catch((e) => {
       console.error(e.message);
       console.log("keypiar not found created a new one");
-      saveLog("keypiar not found created a new one", data.id);
+      // saveLog("keypiar not found created a new one", data.id);
 
       const keyPair = new aws.ec2.KeyPair(
         "aws-faizank",
@@ -150,7 +150,7 @@ export const pulumiProgram = async (data: JobData) => {
   `;
 
   // const keypairs = true;
-  saveLog(`Creating EC2 instance: web-server-www-1`, data.id);
+  // saveLog(`Creating EC2 instance: web-server-www-1`, data.id);
 
   const keypairs = true;
 
@@ -223,25 +223,25 @@ export const pulumiProgram = async (data: JobData) => {
 
   updateEnvVars.stdout.apply((stdout) => {
     console.log("Environment variables update output:", stdout);
-    saveLog(`Environment variables update output: ${stdout}`, data.id);
+    // saveLog(`Environment variables update output: ${stdout}`, data.id);
   });
 
   updateEnvVars.stderr.apply((stderr) => {
     if (stderr) {
       console.error("Environment variables update error:", stderr);
-      saveLog(`Environment variables update error: ${stderr}`, data.id);
+      // saveLog(`Environment variables update error: ${stderr}`, data.id);
     }
   });
 
   ansiblePlaybook.stdout.apply((stdout) => {
     console.log("Ansible output:", stdout);
-    saveLog(`Ansible output: ${stdout}`, data.id);
+    // saveLog(`Ansible output: ${stdout}`, data.id);
   });
 
   ansiblePlaybook.stderr.apply((stderr) => {
     if (stderr) {
       console.error("Ansible error:", stderr);
-      saveLog(`Ansible error: ${stderr}`, data.id);
+      // saveLog(`Ansible error: ${stderr}`, data.id);
     }
   });
 

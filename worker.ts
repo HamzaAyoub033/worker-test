@@ -52,7 +52,7 @@ const worker = new Worker(
     try {
       const result = await runStack(jobData);
       console.log("Job result:", result);
-      await saveLog(`Job result: ${JSON.stringify(result)}`, result.model_id);
+      // await saveLog(`Job result: ${JSON.stringify(result)}`, result.model_id);
 
       jobData.sessionToken = result.sessionToken;
       jobData.instanceId = result.instanceId;
@@ -62,7 +62,7 @@ const worker = new Worker(
       return result;
     } catch (error) {
       console.error("Error in job processing:", error);
-      await saveLog(`Error in job processing: ${error.message}`, jobData.id);
+      // await saveLog(`Error in job processing: ${error.message}`, jobData.id);
       throw error;
     }
   },
@@ -117,7 +117,7 @@ worker.on("failed", async (job, err) => {
       ? FAILED_ENDPOINT_APP
       : FAILED_ENDPOINT;
 
-  await saveLog(`Job ${job?.id} failed with error: ${err.message}`, jobData.id);
+  // await saveLog(`Job ${job?.id} failed with error: ${err.message}`, jobData.id);
 
   try {
     await fetch(failedEndpoint, {
