@@ -203,33 +203,43 @@ const restartInstance = async (data: JobData) => {
 
   // Add SSH check function
   const waitForSSH = async (ip: string): Promise<void> => {
-    const maxAttempts = 20;
+    const maxAttempts = 30; // Increased attempts
     let attempts = 0;
+
+    const checkPort = async (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const { exec } = require("child_process");
+        exec(`nc -zv ${ip} 22 -w 5`, (error: any) => {
+          resolve(!error);
+        });
+      });
+    };
 
     while (attempts < maxAttempts) {
       try {
-        await new Promise((resolve, reject) => {
-          const { exec } = require("child_process");
-          // Add -o ConnectionAttempts=1
-          exec(
-            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o ConnectionAttempts=1 -o UserKnownHostsFile=/dev/null -i aws-faizank-kp.pem ubuntu@${ip} "echo 'SSH Ready'"`,
-            (error: any, stdout: string, stderr: string) => {
-              if (error) {
-                reject(error);
-              } else {
-                resolve(stdout);
-              }
+        const portOpen = await checkPort();
+        if (!portOpen) {
+          throw new Error("Port not available");
+        }
+
+        const { exec } = require("child_process");
+        await new Promise<void>((resolve, reject) => {
+          const cmd = `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes -o UserKnownHostsFile=/dev/null -i aws-faizank-kp.pem ubuntu@${ip} "exit"`;
+          exec(cmd, (error: any) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
             }
-          );
+          });
         });
+
         console.log("SSH is available");
         return;
       } catch (error) {
         attempts++;
-        console.log(
-          `Waiting for SSH to become available... Attempt ${attempts}/${maxAttempts}`
-        );
-        await new Promise((resolve) => setTimeout(resolve, 15000)); // Increase wait time
+        console.log(`Waiting for SSH... Attempt ${attempts}/${maxAttempts}`);
+        await new Promise((resolve) => setTimeout(resolve, 20000));
       }
     }
     throw new Error("SSH never became available");
@@ -315,6 +325,7 @@ const restartInstance = async (data: JobData) => {
     if (publicIp) {
       console.log("Waiting for SSH to become available...");
       // saveLog("Waiting for SSH to become available...", data.id);
+      await new Promise((resolve) => setTimeout(resolve, 90000)); // Wait 90s after instance starts
       await waitForSSH(publicIp);
     }
 
