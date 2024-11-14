@@ -210,8 +210,9 @@ const restartInstance = async (data: JobData) => {
       try {
         await new Promise((resolve, reject) => {
           const { exec } = require("child_process");
+          // Add -o ConnectionAttempts=1
           exec(
-            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i aws-faizank-kp.pem ubuntu@${ip} echo "SSH Ready"`,
+            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -o ConnectionAttempts=1 -o UserKnownHostsFile=/dev/null -i aws-faizank-kp.pem ubuntu@${ip} "echo 'SSH Ready'"`,
             (error: any, stdout: string, stderr: string) => {
               if (error) {
                 reject(error);
@@ -222,15 +223,13 @@ const restartInstance = async (data: JobData) => {
           );
         });
         console.log("SSH is available");
-        // saveLog("SSH connection established", data.id);
         return;
       } catch (error) {
         attempts++;
         console.log(
           `Waiting for SSH to become available... Attempt ${attempts}/${maxAttempts}`
         );
-        // saveLog(`SSH connection attempt ${attempts}/${maxAttempts}`, data.id);
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+        await new Promise((resolve) => setTimeout(resolve, 15000)); // Increase wait time
       }
     }
     throw new Error("SSH never became available");
